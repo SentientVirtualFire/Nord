@@ -8,4 +8,7 @@ prefix = "xkcd "
 ## Commands:
 - `xkcd random` Retrieves a random xkcd comic
 - `xkcd latest` Retrieves the latest xkcd comic
-- `xkcd comic [number]`retrieves the corresponding xkcd comic to `[number]`
+- `xkcd comic [number]` Retrieves the corresponding xkcd comic to `[number]`
+- `xkcd random-whatif` This retrieves a random WhatIf link
+- `xkcd latest-whatif` This retrieves the latest WhatIf link
+- `xkcd whatif [number]` This retrieves the corresponding Whatif to `[number]`
