@@ -1,5 +1,6 @@
 body {
 	margin: 0;
+  text-align:center !important;
 	font-size:16px;
 	font-variant:small-caps;
 	font-family:Lucida,Helvetica,sans-serif;
@@ -16,8 +17,17 @@ body {
 	border-color:#071419;
 	border-radius: 12px;
 	-moz-border-radius: 12px;
-}
+  margin-bottom:15px;
 
+}
+a{
+	color:#96A8C8;
+	text-decoration:none;
+	font-weight:800
+}
+a:hover{
+	text-decoration:underline
+}
 main {
 	width: 90vw;
 	margin: auto;
@@ -45,10 +55,6 @@ h4 {
 
 #commands{
 	margin-left: 30px;
-}
-
-strong {
-	color: red;
 }
 
 .command-info {
