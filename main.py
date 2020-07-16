@@ -7,7 +7,7 @@ import xkcd
 ctx="xkcd "
 token=os.getenv('token')
 client = discord.Client()
-client = commands.Bot(command_prefix=ctx)
+client = commands.Bot(command_prefix=ctx,case_insensitive=True)
 client.remove_command('help')
 color = discord.Color.red()
 
