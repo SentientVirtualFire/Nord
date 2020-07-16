@@ -1,73 +1,73 @@
+#imports-----------------------------------------------
 from discord.ext import commands
 import discord,os,server
 import xkcd
 
+#variables-----------------------------------------------
 ctx="xkcd "
 token=os.getenv('token')
 client = discord.Client()
 client = commands.Bot(command_prefix=ctx)
 client.remove_command('help')
 color = discord.Color.red()
-def getrandxkcd(random):
-  return 
+
+#functions-----------------------------------------------
+async def makeComic(ctx,comic):
+  title=comic.getTitle()
+  alt=comic.getAltText()
+  comic=comic.getImageLink()
+  embed=make_embed(title=f"{title}",desc="made by Randall Munroe")
+  embed.add_field(name="alt text",value=alt)
+  embed.set_image(url=comic)
+  await ctx.send(embed=embed)
+
+async def invalidComic(ctx,integer):  
+  embed = make_embed(title="Error", desc="")
+  embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
+  await ctx.send(embed=embed)
 
 def make_embed(title, desc):
   return discord.Embed(title=title, description=desc, color=color)
 
+#ready-----------------------------------------------
 @client.event
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
 
+#error-----------------------------------------------
 @client.event
 async def on_command_error(ctx, error):
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=error)
   await ctx.send(embed=embed)
 
+
+#commands-----------------------------------------------
 @client.command()
 async def random(ctx):
   random=xkcd.getRandomComic()
-  title=random.getTitle()
-  random=random.getImageLink()
-  embed=make_embed(title="xkcd",desc="")
-  embed.add_field(name=f"{title}",value="made by Randall Munroe")
-  embed.set_image(url=random)
-  await ctx.send(embed=embed)
+  await makeComic(ctx,random)
 
 @client.command()
 async def latest(ctx):
   latest=xkcd.getLatestComic()
-  title=latest.getTitle()
-  latest=latest.getImageLink()
-  embed=make_embed(title="xkcd",desc="")
-  embed.add_field(name=f"{title}",value="made by Randall Munroe")
-  embed.set_image(url=latest)
-  await ctx.send(embed=embed)
+  await makeComic(ctx,latest)
 
 @client.command()
 async def comic(ctx,integer):
   try:  
     integer=int(integer)
   except ValueError:
-    embed = make_embed(title="Error", desc="")
-    embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
-    await ctx.send(embed=embed)
+    await invalidComic(ctx,integer)
     return
   if integer<=xkcd.getLatestComicNum():
     integer=str(integer)
     comic=xkcd.getComic(integer)
-    title=comic.getTitle()
-    comic=comic.getImageLink()
-    embed=make_embed(title=f"xkcd",desc="")
-    embed.add_field(name=f"{title}",value="made by Randall Munroe")
-    embed.set_image(url=comic)
-    await ctx.send(embed=embed)
-  else:
-    embed = make_embed(title="Error", desc="")
-    embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
-    await ctx.send(embed=embed)
+    await makeComic(ctx,comic)
+    await invalidComic(ctx,integer)
 
+#help command----------------------------------------
 @client.command()
 async def help(ctx):
   embed = make_embed(title="Commands", desc="(for the new guys ;)")
@@ -78,5 +78,6 @@ async def help(ctx):
   await ctx.send(embed=embed)
 
 
+#run-----------------------------------------------
 server.server()
 client.run(token)
