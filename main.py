@@ -93,6 +93,16 @@ async def comic(ctx,integer):
     await makeComic(ctx,comic)
     await invalidComic(ctx,integer)
 
+@client.command()
+async def servers(ctx):
+		msg = ''
+		total = 0
+		for i in client.guilds:
+			msg += '\n' + str(i) + ' - ' + str((len(i.members))) + ' members'
+			total += len(i.members)
+		embed = discord.Embed(color=0x00ff00,description=f'xkcdBot is in **{str(len(client.guilds))}** servers.\nTotal members -  **{str(total)}**')
+		await ctx.send(embed=embed)
+
 #help command----------------------------------------
 @client.command()
 async def help(ctx):
