@@ -1,7 +1,7 @@
+#!/usr/bin/env python
 #imports-----------------------------------------------
 from discord.ext import commands
-import discord,os,server
-import xkcd
+import discord,os,xkcd,server,sys
 
 #variables-----------------------------------------------
 ctx="xkcd "
@@ -9,7 +9,8 @@ token=os.getenv('token')
 client = discord.Client()
 client = commands.Bot(command_prefix=ctx,case_insensitive=True)
 client.remove_command('help')
-color = discord.Color.red()
+color=0x96A8C8
+color = discord.Colour(color)
 
 #functions-----------------------------------------------
 async def makeComic(ctx,comic):
@@ -74,6 +75,18 @@ async def whatif(ctx,number):
 async def latest(ctx):
   latest=xkcd.getLatestComic()
   await makeComic(ctx,latest)
+'''
+@client.command()
+async def test(ctx):
+  await ctx.send("it works owo")
+'''
+@client.command()
+@commands.is_owner()
+async def restart(ctx):
+  #await client.logout()
+  #if __name__ == '__main__':
+    #os.execv(__file__, sys.argv)
+  os.system("python main.py")
 
 @client.command(aliases=['invite link','invitelink'])
 async def link(ctx):
@@ -118,5 +131,11 @@ async def help(ctx):
 
 
 #run-----------------------------------------------
+#async def main():
+
 server.server()
 client.run(token)
+'''
+while 1:
+    import bot
+'''
