@@ -83,10 +83,12 @@ async def test(ctx):
 @client.command()
 @commands.is_owner()
 async def restart(ctx):
-  #await client.logout()
-  #if __name__ == '__main__':
-    #os.execv(__file__, sys.argv)
-  os.system("python main.py")
+  embed=make_embed(title=":white_check_mark:",desc="Successfully Restarted")
+  await ctx.send(embed=embed)
+  os.system("clear")
+  os.execv(sys.executable, ['python'] + sys.argv)
+  
+  await ctx.send("succesfully restarted")
 
 @client.command(aliases=['invite link','invitelink'])
 async def link(ctx):
