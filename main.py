@@ -71,6 +71,19 @@ async def whatif(ctx,number):
   whatif=xkcd.getWhatIf(number)
   await makeWhatIf(ctx,whatif)  
 
+@client.command(aliases=['suggestions','bug','report'])
+async def feedback(ctx,*,message=None):
+  channel=client.get_channel(733608622033993749)
+  location = 'https://discordapp.com/channels/'+str(ctx.guild.id)+'/'+str(ctx.channel.id)+'/'+str(ctx.message.id)
+  if message==None or len(message)>=2001:
+    embed=make_embed(title="Error",desc="Either your feedback was too long (over 2000 characters) or You did not type a feedback")
+    await ctx.send(embed=embed) 
+  else:
+    embed=make_embed(title=f"{ctx.author} says:",desc=f"```{message}```\nURL: {location}\nServer: {ctx.guild}")
+    await channel.send(embed=embed)
+    embed=make_embed(title=f"Thank you for your feedback",desc="It has been sent to my developers")
+    await ctx.send(embed=embed)
+
 @client.command()
 async def latest(ctx):
   latest=xkcd.getLatestComic()
@@ -94,6 +107,7 @@ async def restart(ctx):
 async def link(ctx):
   embed = make_embed(title="Invite Link", desc="https://discord.com/api/oauth2/authorize?client_id=718079038471798824&permissions=0&scope=bo")
   await ctx.send(embed=embed)
+
 
 @client.command()
 async def comic(ctx,integer):

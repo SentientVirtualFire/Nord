@@ -12,3 +12,4 @@ prefix = "xkcd "
 - `xkcd random-whatif` This retrieves a random WhatIf link
 - `xkcd latest-whatif` This retrieves the latest WhatIf link
 - `xkcd whatif [number]` This retrieves the corresponding Whatif to `[number]`
+- `xkcd feedback [message]` This sends the developer(s) of the bot your message (cannot be over 2000 characters)
