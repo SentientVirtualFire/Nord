@@ -38,18 +38,6 @@ def make_embed(title, desc):
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
-
-@client.event
-async def on_message(message):
-  if 'cactus' in message.clean_content.lower():
-    await message.add_reaction("🌵")
-  if 'fire' in message.clean_content.lower():
-    await message.add_reaction("🔥")
-  '''
-  if str(message.author.id) not in await get_banned():
-    await client.process_commands(message)
-  '''
-
 #error-----------------------------------------------
 @client.event
 async def on_command_error(ctx, error):
