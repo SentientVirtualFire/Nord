@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #imports-----------------------------------------------
 from discord.ext import commands
-import discord,os,xkcd,server,sys
+import discord,os,xkcd,server,sys,asyncio
 
 #variables-----------------------------------------------
 ctx="xkcd "
@@ -20,7 +19,9 @@ async def makeComic(ctx,comic):
   embed=make_embed(title=f"{title}",desc="by Randall Munroe")
   embed.add_field(name="alt text",value=alt)
   embed.set_image(url=comic)
-  await ctx.send(embed=embed)
+  print(comic)
+  comic=await ctx.send(embed=embed)
+  
 
 async def makeWhatIf(ctx,whatif):  
   title=whatif.getTitle()
@@ -32,11 +33,22 @@ async def makeWhatIf(ctx,whatif):
 def make_embed(title, desc):
   return discord.Embed(title=title, description=desc, color=color)
 
-#ready-----------------------------------------------
+#events-----------------------------------------------
 @client.event
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
+
+@client.event
+async def on_message(message):
+  if 'cactus' in message.clean_content.lower():
+    await message.add_reaction("🌵")
+  if 'fire' in message.clean_content.lower():
+    await message.add_reaction("🔥")
+  '''
+  if str(message.author.id) not in await get_banned():
+    await client.process_commands(message)
+  '''
 
 #error-----------------------------------------------
 @client.event
@@ -88,12 +100,8 @@ async def feedback(ctx,*,message=None):
 async def latest(ctx):
   latest=xkcd.getLatestComic()
   await makeComic(ctx,latest)
-'''
-@client.command()
-async def test(ctx):
-  await ctx.send("it works owo")
-'''
-@client.command()
+  
+@client.command(aliases=["r"])
 @commands.is_owner()
 async def restart(ctx):
   embed=make_embed(title=":white_check_mark:",desc="Successfully Restarted")
@@ -119,18 +127,21 @@ async def comic(ctx,integer):
   if integer<=xkcd.getLatestComicNum():
     integer=str(integer)
     comic=xkcd.getComic(integer)
-    await makeComic(ctx,comic)
+    comic=await makeComic(ctx,comic)
+    await comic.add_reaction("⬅️")
+    await comic.add_reaction("➡️")
+  else:
     await invalidComic(ctx,integer)
 
 @client.command()
 async def servers(ctx):
-		msg = ''
-		total = 0
-		for i in client.guilds:
-			msg += '\n' + str(i) + ' - ' + str((len(i.members))) + ' members'
-			total += len(i.members)
-		embed = discord.Embed(color=0x00ff00,description=f'xkcdBot is in **{str(len(client.guilds))}** servers.\nTotal members -  **{str(total)}**')
-		await ctx.send(embed=embed)
+    msg = ''
+    total = 0
+    for i in client.guilds:
+      msg += '\n' + str(i) + ' - ' + str((len(i.members))) + ' members'
+      total += len(i.members)
+    embed = discord.Embed(color=0x00ff00,description=f'xkcdBot is in **{str(len(client.guilds))}** servers.\nTotal members -  **{str(total)}**')
+    await ctx.send(embed=embed)
 
 #help command----------------------------------------
 @client.command()
@@ -151,7 +162,3 @@ async def help(ctx):
 
 server.server()
 client.run(token)
-'''
-while 1:
-    import bot
-'''
