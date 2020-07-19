@@ -1,6 +1,6 @@
 #imports-----------------------------------------------
 from discord.ext import commands
-import discord,os,xkcd,server,sys
+import discord,os,xkcd,server,sys,asyncio
 
 #variables-----------------------------------------------
 ctx="xkcd "
@@ -10,7 +10,6 @@ client = commands.Bot(command_prefix=ctx,case_insensitive=True)
 client.remove_command('help')
 color=0x96A8C8
 color = discord.Colour(color)
-
 #functions-----------------------------------------------
 async def makeComic(ctx,comic):
   title=comic.getTitle()
@@ -53,27 +52,27 @@ async def on_ready():
 @client.event
 async def on_reaction_add(reaction, user):
   msg=reaction.message
-  content=msg.content
   if msg.author == client.user and user.id!=718079038471798824:
-    if reaction.emoji=="➡️" and "Comic:" in content:
-      await msg.delete()
-
-    elif reaction.emoji=="⬅️":# and "Comic:" in content: 
-      await msg.delete()
-      await msg.channel.send(content)
-
-    elif reaction.emoji=="🎲":
+    if reaction.emoji=="🎲":
       random=xkcd.getRandomComic()
       await msg.delete()
       await makeComic(msg,random)
-    
+
+@client.event
+async def on_message(ctx):
+  if "zwack" in ctx.content.lower():  
+    await ctx.add_reaction("<:zwack:451912829142827008>")
+  if "fire" in ctx.content.lower() or "space" in ctx.content.lower():
+    await ctx.add_reaction("🔥") 
+  await client.process_commands(ctx)
 #error-----------------------------------------------
+'''
 @client.event
 async def on_command_error(ctx, error):
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=error)
   await ctx.send(embed=embed)
-  
+'''
 async def invalidComic(ctx,integer):  
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
@@ -117,7 +116,7 @@ async def feedback(ctx,*,message=None):
 async def latest(ctx):
   latest=xkcd.getLatestComic()
   await makeComic(ctx,latest)
-  
+
 @client.command(aliases=["r"])
 @commands.is_owner()
 async def restart(ctx):
@@ -125,7 +124,6 @@ async def restart(ctx):
   await ctx.send(embed=embed)
   os.system("clear")
   os.execv(sys.executable, ['python'] + sys.argv)
-  
   await ctx.send("succesfully restarted")
 
 @client.command(aliases=['invite link','invitelink'])
@@ -136,17 +134,43 @@ async def link(ctx):
 
 @client.command()
 async def comic(ctx,integer=xkcd.getLatestComicNum()):
+  comicNum=xkcd.getLatestComicNum()
   try:  
     integer=int(integer)
   except ValueError:
     await invalidComic(ctx,integer)
     return
-  if integer<=xkcd.getLatestComicNum():
-    integer=str(integer)
+  if integer<=comicNum:
+    #integer=str(integer)
     comic=xkcd.getComic(integer)
     comic=await makeComicNum(ctx,comic,integer)
-    await comic.add_reaction("⬅️")
-    await comic.add_reaction("➡️")
+    await comic.add_reaction("◀️")
+    await comic.add_reaction("▶️")
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+    while True:
+      try:
+        reaction, user = await client.wait_for("reaction_add", timeout=60, check=check)
+        if str(reaction.emoji) == "▶️" and integer != comicNum:
+          integer += 1
+          await comic.delete()
+          comic=xkcd.getComic(integer)
+          comic=await makeComicNum(ctx,comic,integer)
+          await comic.add_reaction("◀️")
+          await comic.add_reaction("▶️")
+
+        elif str(reaction.emoji) == "◀️" and integer > 0:
+          integer -= 1
+          await comic.delete()
+          comic=xkcd.getComic(integer)
+          comic=await makeComicNum(ctx,comic,integer)
+          await comic.add_reaction("◀️")
+          await comic.add_reaction("▶️")
+
+        else:
+          await comic.remove_reaction(reaction, user)
+      except asyncio.TimeoutError:
+          break
   else:
     await invalidComic(ctx,integer)
 
