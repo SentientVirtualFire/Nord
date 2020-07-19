@@ -1,6 +1,6 @@
 #imports-----------------------------------------------
 from discord.ext import commands
-import discord,os,xkcd,server,sys,asyncio
+import discord,os,xkcd,server,sys
 
 #variables-----------------------------------------------
 ctx="xkcd "
@@ -17,17 +17,22 @@ async def makeComic(ctx,comic):
   alt=comic.getAltText()
   comic=comic.getImageLink()
   embed=make_embed(title=f"{title}",desc="by Randall Munroe")
-  embed.add_field(name="alt text",value=alt)
   embed.set_image(url=comic)
+  embed.set_footer(text=alt,icon_url="https://xkcd.com/s/919f27.ico")
   comic=await ctx.channel.send(embed=embed)
   await comic.add_reaction("🎲")
   return comic
-  
-async def nextPage(message,user):
-  pass#await message.reactions.remove(user)
 
-async def prevPage(message,user):
-  pass#await message.reactions.remove(user)
+async def makeComicNum(ctx,comic,num):
+  title=comic.getTitle()
+  alt=comic.getAltText()
+  comic=comic.getImageLink()
+  embed=make_embed(title=f"{title}",desc=f"by Randall Munroe\nComic: {num}/{xkcd.getLatestComicNum()}")
+  embed.set_image(url=comic)
+  embed.set_footer(text=alt,icon_url="https://xkcd.com/s/919f27.ico")
+  comic=await ctx.channel.send(embed=embed)
+  await comic.add_reaction("🎲")
+  return comic
 
 async def makeWhatIf(ctx,whatif):  
   title=whatif.getTitle()
@@ -48,23 +53,20 @@ async def on_ready():
 @client.event
 async def on_reaction_add(reaction, user):
   msg=reaction.message
-  if msg.author == client.user:
-    if reaction.emoji=="➡️":
-      if user.id!=718079038471798824:  
-        await reaction.remove("➡️")
-        await nextPage(msg,user)
+  content=msg.content
+  if msg.author == client.user and user.id!=718079038471798824:
+    if reaction.emoji=="➡️" and "Comic:" in content:
+      await msg.delete()
 
-    elif reaction.emoji=="⬅️":
-      if user.id!=718079038471798824:  
-        await msg.delete()
-        await prevPage(msg,user)
+    elif reaction.emoji=="⬅️":# and "Comic:" in content: 
+      await msg.delete()
+      await msg.channel.send(content)
 
     elif reaction.emoji=="🎲":
-      if user.id!=718079038471798824:
-        random=xkcd.getRandomComic()
-        await msg.delete()
-        await makeComic(msg,random)
-      
+      random=xkcd.getRandomComic()
+      await msg.delete()
+      await makeComic(msg,random)
+    
 #error-----------------------------------------------
 @client.event
 async def on_command_error(ctx, error):
@@ -142,7 +144,7 @@ async def comic(ctx,integer=xkcd.getLatestComicNum()):
   if integer<=xkcd.getLatestComicNum():
     integer=str(integer)
     comic=xkcd.getComic(integer)
-    comic=await makeComic(ctx,comic)
+    comic=await makeComicNum(ctx,comic,integer)
     await comic.add_reaction("⬅️")
     await comic.add_reaction("➡️")
   else:

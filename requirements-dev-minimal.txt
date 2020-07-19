@@ -1,0 +1,4 @@
+python-xkcd
+flask
+threading
+discord

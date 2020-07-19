@@ -1,4 +1,4 @@
-local
+__pycache__/
 .env
 *.lock
 *.toml
