@@ -19,9 +19,15 @@ async def makeComic(ctx,comic):
   embed=make_embed(title=f"{title}",desc="by Randall Munroe")
   embed.add_field(name="alt text",value=alt)
   embed.set_image(url=comic)
-  print(comic)
-  comic=await ctx.send(embed=embed)
+  comic=await ctx.channel.send(embed=embed)
+  await comic.add_reaction("🎲")
+  return comic
   
+async def nextPage(message,user):
+  pass#await message.reactions.remove(user)
+
+async def prevPage(message,user):
+  pass#await message.reactions.remove(user)
 
 async def makeWhatIf(ctx,whatif):  
   title=whatif.getTitle()
@@ -38,6 +44,27 @@ def make_embed(title, desc):
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
+
+@client.event
+async def on_reaction_add(reaction, user):
+  msg=reaction.message
+  if msg.author == client.user:
+    if reaction.emoji=="➡️":
+      if user.id!=718079038471798824:  
+        await reaction.remove("➡️")
+        await nextPage(msg,user)
+
+    elif reaction.emoji=="⬅️":
+      if user.id!=718079038471798824:  
+        await msg.delete()
+        await prevPage(msg,user)
+
+    elif reaction.emoji=="🎲":
+      if user.id!=718079038471798824:
+        random=xkcd.getRandomComic()
+        await msg.delete()
+        await makeComic(msg,random)
+      
 #error-----------------------------------------------
 @client.event
 async def on_command_error(ctx, error):
@@ -106,7 +133,7 @@ async def link(ctx):
 
 
 @client.command()
-async def comic(ctx,integer):
+async def comic(ctx,integer=xkcd.getLatestComicNum()):
   try:  
     integer=int(integer)
   except ValueError:
