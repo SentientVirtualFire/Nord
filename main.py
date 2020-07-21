@@ -1,6 +1,7 @@
 #imports-----------------------------------------------
-from discord.ext import commands
 import discord,os,xkcd,server,sys,asyncio
+from random import randrange
+from discord.ext import commands
 
 #variables-----------------------------------------------
 ctx="xkcd "
@@ -11,27 +12,46 @@ client.remove_command('help')
 color=0x96A8C8
 color = discord.Colour(color)
 #functions-----------------------------------------------
-async def makeComic(ctx,comic):
+async def makeComic(ctx,comic,integer):
+  comicNum=xkcd.getLatestComicNum()
   title=comic.getTitle()
   alt=comic.getAltText()
   comic=comic.getImageLink()
-  embed=make_embed(title=f"{title}",desc="by Randall Munroe")
+  embed=make_embed(title=f"{title}",desc=f"by Randall Munroe\nComic: {integer}/{comicNum}")
   embed.set_image(url=comic)
   embed.set_footer(text=alt,icon_url="https://xkcd.com/s/919f27.ico")
   comic=await ctx.channel.send(embed=embed)
+  if integer>1:
+    await comic.add_reaction("◀️")
   await comic.add_reaction("🎲")
+  if integer<comicNum:
+    await comic.add_reaction("▶️")
   return comic
 
-async def makeComicNum(ctx,comic,num):
-  title=comic.getTitle()
-  alt=comic.getAltText()
-  comic=comic.getImageLink()
-  embed=make_embed(title=f"{title}",desc=f"by Randall Munroe\nComic: {num}/{xkcd.getLatestComicNum()}")
-  embed.set_image(url=comic)
-  embed.set_footer(text=alt,icon_url="https://xkcd.com/s/919f27.ico")
-  comic=await ctx.channel.send(embed=embed)
-  await comic.add_reaction("🎲")
-  return comic
+async def sendComic(ctx,comic,integer):
+  comicNum=xkcd.getLatestComicNum()
+  comic=await  makeComic(ctx,comic,integer)
+  def check(reaction, user):
+    return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+  while True:
+    try:
+      reaction, user = await client.wait_for("reaction_add", timeout=60, check=check)
+      if str(reaction.emoji) == "▶️" and integer < comicNum and user == ctx.author:
+        integer += 1
+        await comic.delete()
+        comic=xkcd.getComic(integer)
+        comic=await  makeComic(ctx,comic,integer)
+      elif str(reaction.emoji) == "◀️" and integer > 1 and user == ctx.author:
+        integer -= 1
+        await comic.delete()
+        comic=xkcd.getComic(integer)
+        comic=await  makeComic(ctx,comic,integer)
+      elif str(reaction.emoji) == "🎲" and user == ctx.author:
+        await comic.delete()
+        comic=xkcd.getComic(integer)
+        comic=await  makeComic(ctx,comic,integer)
+    except asyncio.TimeoutError:
+      break
 
 async def makeWhatIf(ctx,whatif):  
   title=whatif.getTitle()
@@ -48,31 +68,30 @@ def make_embed(title, desc):
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
-
+'''
 @client.event
 async def on_reaction_add(reaction, user):
   msg=reaction.message
   if msg.author == client.user and user.id!=718079038471798824:
-    if reaction.emoji=="🎲":
-      random=xkcd.getRandomComic()
-      await msg.delete()
-      await makeComic(msg,random)
+    pass
+'''    
 
 @client.event
 async def on_message(ctx):
   if "zwack" in ctx.content.lower():  
     await ctx.add_reaction("<:zwack:451912829142827008>")
   if "fire" in ctx.content.lower() or "space" in ctx.content.lower():
+    await ctx.add_reaction("⭐") 
     await ctx.add_reaction("🔥") 
   await client.process_commands(ctx)
 #error-----------------------------------------------
-'''
+#'''
 @client.event
 async def on_command_error(ctx, error):
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=error)
   await ctx.send(embed=embed)
-'''
+#'''
 async def invalidComic(ctx,integer):  
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
@@ -81,8 +100,9 @@ async def invalidComic(ctx,integer):
 #commands-----------------------------------------------
 @client.command()
 async def random(ctx):
-  random=xkcd.getRandomComic()
-  await makeComic(ctx,random)
+  integer=randrange(1,xkcd.getLatestComicNum())
+  comic=xkcd.getComic(integer)
+  await sendComic(ctx,comic,integer)
 
 @client.command(aliases=['random-whatif'])
 async def random_whatif(ctx):
@@ -115,7 +135,8 @@ async def feedback(ctx,*,message=None):
 @client.command()
 async def latest(ctx):
   latest=xkcd.getLatestComic()
-  await makeComic(ctx,latest)
+  integer=xkcd.getLatestComicNum()
+  await sendComic(ctx,latest,integer)
 
 @client.command(aliases=["r"])
 @commands.is_owner()
@@ -141,47 +162,21 @@ async def comic(ctx,integer=xkcd.getLatestComicNum()):
     await invalidComic(ctx,integer)
     return
   if integer<=comicNum:
-    #integer=str(integer)
     comic=xkcd.getComic(integer)
-    comic=await makeComicNum(ctx,comic,integer)
-    await comic.add_reaction("◀️")
-    await comic.add_reaction("▶️")
-    def check(reaction, user):
-        return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-    while True:
-      try:
-        reaction, user = await client.wait_for("reaction_add", timeout=60, check=check)
-        if str(reaction.emoji) == "▶️" and integer != comicNum:
-          integer += 1
-          await comic.delete()
-          comic=xkcd.getComic(integer)
-          comic=await makeComicNum(ctx,comic,integer)
-          await comic.add_reaction("◀️")
-          await comic.add_reaction("▶️")
-
-        elif str(reaction.emoji) == "◀️" and integer > 0:
-          integer -= 1
-          await comic.delete()
-          comic=xkcd.getComic(integer)
-          comic=await makeComicNum(ctx,comic,integer)
-          await comic.add_reaction("◀️")
-          await comic.add_reaction("▶️")
-
-        else:
-          await comic.remove_reaction(reaction, user)
-      except asyncio.TimeoutError:
-          break
+    await sendComic(ctx,comic,integer)
   else:
     await invalidComic(ctx,integer)
 
 @client.command()
 async def servers(ctx):
-    msg = ''
+    msg = '```'
     total = 0
     for i in client.guilds:
-      msg += '\n' + str(i) + ' - ' + str((len(i.members))) + ' members'
+      msg=msg+f'{i.name} {i.member_count}\n'
       total += len(i.members)
-    embed = discord.Embed(color=0x00ff00,description=f'xkcdBot is in **{str(len(client.guilds))}** servers.\nTotal members -  **{str(total)}**')
+    msg=msg+'```'
+    embed = make_embed(title=f'xkcdBot is in **{str(len(client.guilds))}** servers',desc=msg)  
+    embed.add_field(name=f'Total members',value=f'{str(total)}')
     await ctx.send(embed=embed)
 
 #help command----------------------------------------
@@ -199,7 +194,6 @@ async def help(ctx):
 
 
 #run-----------------------------------------------
-#async def main():
 
 server.server()
 client.run(token)
