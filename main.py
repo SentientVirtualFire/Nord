@@ -68,13 +68,6 @@ def make_embed(title, desc):
 async def on_ready():
   await client.change_presence(activity=discord.Game('xkcd help'))
   print('{0.user} is online'.format(client))
-'''
-@client.event
-async def on_reaction_add(reaction, user):
-  msg=reaction.message
-  if msg.author == client.user and user.id!=718079038471798824:
-    pass
-'''    
 
 @client.event
 async def on_message(ctx):
