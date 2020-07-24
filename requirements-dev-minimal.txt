@@ -3,3 +3,4 @@ flask
 threading
 discordpy
 wikipedia
+replit-db-client
