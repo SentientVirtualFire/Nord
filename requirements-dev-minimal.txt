@@ -1,4 +1,5 @@
 python-xkcd
 flask
 threading
-discord
+discordpy
+wikipedia

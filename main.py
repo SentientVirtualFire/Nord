@@ -1,6 +1,7 @@
 #imports-----------------------------------------------
-import discord,os,xkcd,server,sys,asyncio
+import discord,os,xkcd,server,sys,asyncio,wikipedia as wp,re,warnings
 from random import randrange
+from bs4 import GuessedAtParserWarning
 from discord.ext import commands
 
 #variables-----------------------------------------------
@@ -11,6 +12,7 @@ client = commands.Bot(command_prefix=ctx,case_insensitive=True)
 client.remove_command('help')
 color=0x96A8C8
 color = discord.Colour(color)
+
 #functions-----------------------------------------------
 async def makeComic(ctx,comic,integer):
   comicNum=xkcd.getLatestComicNum()
@@ -78,16 +80,34 @@ async def on_message(ctx):
     await ctx.add_reaction("🔥") 
   await client.process_commands(ctx)
 #error-----------------------------------------------
-#'''
+'''
 @client.event
 async def on_command_error(ctx, error):
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=error)
   await ctx.send(embed=embed)
-#'''
+'''
 async def invalidComic(ctx,integer):  
   embed = make_embed(title="Error", desc="")
   embed.add_field(name=":face_with_raised_eyebrow: ", value=f'Comic number "{integer}" is not valid')
+  await ctx.send(embed=embed)
+
+async def invalidWiki(ctx,integer):  
+  embed = make_embed(title="Error", desc="")
+  embed.add_field(name=":face_with_raised_eyebrow: ", value=f'The Wikipedia page "{integer}" does not exist')
+  await ctx.send(embed=embed)
+warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
+#help command----------------------------------------
+@client.command()
+async def help(ctx):
+  embed = make_embed(title="Commands", desc="These are the xkcdBot commands. All commands are case-insensitive.")
+  embed.add_field(name="xkcd help", value="This is the help command")
+  embed.add_field(name="xkcd random", value="This retrieves a random xkcd comic")
+  embed.add_field(name="xkcd latest", value="This retrieves the latest xkcd comic")
+  embed.add_field(name="xkcd comic [number]", value="This retrieves the corresponding xkcd comic to [number]")
+  embed.add_field(name="xkcd random-whatif", value="This retrieves a random WhatIf link")
+  embed.add_field(name="xkcd latest-whatif", value="This retrieves the latest WhatIf link")
+  embed.add_field(name="xkcd whatif [number]", value="This retrieves the corresponding Whatif to [number]")
   await ctx.send(embed=embed)
 
 #commands-----------------------------------------------
@@ -172,21 +192,47 @@ async def servers(ctx):
     embed.add_field(name=f'Total members',value=f'{str(total)}')
     await ctx.send(embed=embed)
 
-#help command----------------------------------------
 @client.command()
-async def help(ctx):
-  embed = make_embed(title="Commands", desc="These are the xkcdBot commands. All commands are case-insensitive.")
-  embed.add_field(name="xkcd help", value="This is the help command")
-  embed.add_field(name="xkcd random", value="This retrieves a random xkcd comic")
-  embed.add_field(name="xkcd latest", value="This retrieves the latest xkcd comic")
-  embed.add_field(name="xkcd comic [number]", value="This retrieves the corresponding xkcd comic to [number]")
-  embed.add_field(name="xkcd random-whatif", value="This retrieves a random WhatIf link")
-  embed.add_field(name="xkcd latest-whatif", value="This retrieves the latest WhatIf link")
-  embed.add_field(name="xkcd whatif [number]", value="This retrieves the corresponding Whatif to [number]")
+async def search(ctx,query):
+  msg = '```'
+  if len(wp.search(query))==0:
+    await ctx.send("Nope- nothing like that.")
+    return
+  for i in wp.search(query):
+    msg=msg+f'{i}\n'
+  msg=msg+'```'
+  embed=make_embed(title=f"Query: {query}",desc=msg)
   await ctx.send(embed=embed)
 
+@client.command()
+async def wiki(ctx,*,query=None):
+    if query==None:
+      await ctx.send("Please type the name of the wikipedia aticle you want to see")
+      return
+    try:
+      article=wp.page(query)
+    except wp.exceptions.DisambiguationError or wp.exceptions.PageError:
+      if len(wp.search(query))>0:
+        msg = '```'
+        for i in wp.search(query):
+          msg=msg+f'{i}\n'
+        msg=msg+'```'
+        embed=make_embed(title="Your Wiki was not found here are some similar results:",desc=msg)
+        await ctx.send(embed=embed)
+        return
+      else:
+        await ctx.send(embed=make_embed(title="Lmao",desc="We could not find the wiki you were looking for or any wikis similar."))
+        return
+    embed=make_embed(title=article.title,desc=f"URL:{article.url}")
+    sent=10
+    for i in range(31):  
+      summary=wp.summary(query,sentences=sent)
+      if len(summary)>=1024:
+        sent-=1
+    sent=len(re.split(r'[.!?]+', summary))-1
+    embed.add_field(name=f"Summary (first {sent} sentence(s)):",value=summary)
+    await ctx.send(embed=embed)
 
 #run-----------------------------------------------
-
 server.server()
 client.run(token)

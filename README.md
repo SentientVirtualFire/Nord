@@ -13,3 +13,5 @@ prefix = "xkcd "
 - `xkcd latest-whatif` This retrieves the latest WhatIf link
 - `xkcd whatif [number]` This retrieves the corresponding Whatif to `[number]`
 - `xkcd feedback [message]` This sends the developer(s) of the bot your message (cannot be over 2000 characters)
+- `xkcd search [query]` This will search wikipedia and bring you top ten results (or less if ten cant be found)
+- `xkcd wiki [query]` This will bring the most similar article to your query, including a link and the first few sentences
