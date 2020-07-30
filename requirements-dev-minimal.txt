@@ -3,4 +3,5 @@ flask
 threading
 discordpy
 wikipedia
+bs4
 replit-db-client
