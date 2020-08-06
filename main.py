@@ -1,20 +1,21 @@
 #imports-----------------------------------------------
-import discord, os, xkcd, server, sys, asyncio, wikipedia as wp, re, warnings, replitdb, json, praw
-from random import randrange
+import discord, os, xkcd, sys, asyncio, wikipedia as wp, re, warnings, praw, json, server
+from random import randrange,choice
 from bs4 import GuessedAtParserWarning
 from discord.ext import commands
-
+'''server,'''
 #variables-----------------------------------------------
-defprefix="/"
+defprefix="["
 token = os.getenv('token')
-client = discord.Client()
 client = commands.Bot(command_prefix=defprefix, case_insensitive=True)
 client.remove_command('help')
 color = 0x96A8C8
 color = discord.Colour(color)
 vaulters = [715591423633784844]
-reddit = praw.Reddit(client_id=os.getenv("red"),client_secret=os.getenv("redsec"),user_agent="Nord")
-
+reddit = praw.Reddit(client_id=os.getenv("red"),client_secret=os.getenv("redsec"),user_agent="Nord by /u/SpaceFire314")
+global seen
+seen = {}
+reddit_nono=[437048931827056642]
 #functions-----------------------------------------------
 async def makeComic(ctx, comic, integer):
     comicNum = xkcd.getLatestComicNum()
@@ -25,7 +26,7 @@ async def makeComic(ctx, comic, integer):
         title=f"{title}",
         desc=f"by Randall Munroe\nComic: {integer}/{comicNum}")
     embed.set_image(url=comic)
-    embed.set_footer(text=alt, icon_url="https://xkcd.com/s/919f27.ico")
+    embed.set_footer(text=alt)
     comic = await ctx.channel.send(embed=embed)
     if integer > 1:
         await comic.add_reaction("◀️")
@@ -81,7 +82,8 @@ def make_embed(title, desc):
 @client.event
 async def on_ready():
   await client.change_presence(activity=discord.Game(f"{defprefix}help"))
-  print('{0.user} is online'.format(client))
+  print(f'{client.user} is online')
+
 
 
 @client.event
@@ -91,16 +93,13 @@ async def on_message(ctx):
   if "fire" in ctx.content.lower() or "space" in ctx.content.lower():
     await ctx.add_reaction("⭐")
     await ctx.add_reaction("🔥")
-  if ctx.content.startswith('xkcd '):
-    ctx.send("This bot no longer uses this prefix the new prefix is `/`\n this message will stop appearing tommorow...so tell people")
+  '''
+  if ctx.author.id==671394498940633108:
+    while True:
+      channel = await ctx.author.create_dm()
+      await channel.send("SHREK")
+  '''
   await client.process_commands(ctx) 
-  '''
-  if ctx.author.id==715591423633784844:
-    db.wipe
-    #print(await db.all_dict)
-    #print(dict(await db.view(str(ctx.guild.id))).get("prefix"))
-    #pass
-  '''
   
 
 
@@ -125,10 +124,37 @@ async def invalidComic(ctx, integer):
 warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
 #help command----------------------------------------
-@client.command()
+@client.command(name="help", aliases=['h'], description="Returns all commands available.")
 async def help(ctx):
-    embed = make_embed(title="Commands can be found on the website here: https://xkcdbot.spacefire.repl.co/",desc=" ")
-    await ctx.send(embed=embed)
+    single = True
+    if (len(ctx.message.content.split(" ")) > 1):
+        single = False
+    if (single):
+        embed = discord.Embed(
+            title="Help", description="prefix= `[`", color=color)
+        for command in client.commands:
+            view = True
+#'''
+            # hide dev command(s)
+            if str(command) in ['restart','test']:
+              view = False
+#'''
+            if (view == True):
+              if (command.description == ''):
+                command.description = 'No description'
+              commands = f"( {command}"
+              yes = False
+              for i in command.aliases:
+                  yes = True
+                  commands += f" | {i}"
+              if (yes):
+                  commands += " )"
+              else:
+                  commands = commands[2:]
+              embed.add_field(name=commands,value=str(command.description),inline=False)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Help per command soon")
 
 
 #xkcd commands-----------------------------------------------
@@ -209,40 +235,9 @@ async def restart(ctx):
     os.execv(sys.executable, ['python'] + sys.argv)
     await ctx.send("succesfully restarted")
 
-@client.command(aliases=["t"])
-@commands.is_owner()
-async def test(ctx,code):
-    exec(code)
-    await ctx.send("succesfully run")
-'''
-@client.command(aliases=["db"])
-@commands.is_owner()
-async def database(ctx,*,data):
-  try:  
-    data=json.loads(str(data))
-    await db.set_dict(data)
-    print(await db.all_dict)
-    await ctx.send(f"Done, Bro")
-  except Exception as e:
-    await ctx.send(f"Yikes! either you or I messed up, here is what happend\n```\n{e}\n```")
-
-@client.command(aliases=["del"])
-@commands.is_owner()
-async def delete(ctx,*,data):
-  try:  
-    await db.remove(data)
-    await ctx.send(f"Done, Bro")
-  except Exception as e:
-    await ctx.send(f"Yikes! either you or I messed up, here is what happend\n```\n{e}\n```")
-'''
-
 @client.command(aliases=['invite link', 'invitelink'])
 async def link(ctx):
-    embed = make_embed(
-        title="Invite Link",
-        desc=
-        "https://discord.com/api/oauth2/authorize?client_id=718079038471798824&permissions=0&scope=bo"
-    )
+    embed = make_embed(title="Invite Link",desc="https://discord.com/api/oauth2/authorize?client_id=718079038471798824&permissions=0&scope=bo")
     await ctx.send(embed=embed)
 
 #info commands-----------------------------------------------
@@ -251,17 +246,55 @@ async def servers(ctx):
     msg = '```'
     total = 0
     for i in client.guilds:
-        msg = msg + f'{i.name} {i.member_count}\n'
-        total += len(i.members)
+      total += i.member_count
+    for i in client.guilds:
+        msg = msg + f'{i.name} {round((i.member_count/total)*100,2)}%\n'
+        #total += len(i.members)
     msg = msg + '```'
     embed = make_embed(
         title=f'Nord is in **{str(len(client.guilds))}** servers', desc=msg)
     embed.add_field(name=f'Total members', value=f'{str(total)}')
     await ctx.send(embed=embed)
 
+@client.command(name="prof", description="Get the info from the mentioned user.")
+async def prof(ctx,*,member:discord.Member=None):
+  author=ctx.author
+  if member==None:  
+    user=str(author)
+    avatar=str(author.avatar_url)
+    userid=str(author.id)
+    join=str(author.joined_at)
+    nick=str(author.nick)
+    rolesraw=[role.mention for role in author.roles]
+    del rolesraw[0]
+    roles=''.join(rolesraw)
+    created=str(author.created_at)
+  else:
+    user=str(member)
+    userid=str(member.id)
+    avatar=str(member.avatar_url)
+    join=str(member.joined_at)
+    nick=str(member.nick)
+    rolesraw=[role.mention for role in member.roles]
+    del rolesraw[0]
+    
+    roles=''.join(rolesraw)
+    created=str(member.created_at)
+  embed=make_embed(title=user,desc="")
+  embed.add_field(name="Id",value=userid)
+  embed.add_field(name=f"Joined {ctx.guild}",value=join)
+  embed.add_field(name="Nickname",value=nick)
+  embed.add_field(name="Roles",value=roles)
+  embed.add_field(name="Created Acount",value=created)
+  embed.set_thumbnail(url=avatar)
+  await ctx.send(embed=embed)
+
+@client.command(name="ping", description="Check the ping of the bot.")
+async def ping(ctx):
+  await ctx.send(f"Pong!\n`{round(client.latency * 1000)}ms`")
 #wiki commands-----------------------------------------------
-@client.command()
-async def search(ctx, query):
+@client.command(aliases=["sw"])
+async def search_wiki(ctx, query):
     msg = '```'
     if len(wp.search(query)) == 0:
         await ctx.send("Nope- nothing like that.")
@@ -275,56 +308,83 @@ async def search(ctx, query):
 
 @client.command()
 async def wiki(ctx, *, query=None):
+  async with ctx.channel.typing():  
     if query == None:
-        await ctx.send(
-            "Please type the name of the wikipedia aticle you want to see")
-        return
+      await ctx.send("Please type the name of the wikipedia aticle you want to see")
+      return
     try:
-        article = wp.page(query)
+      article = wp.page(query)
     except wp.exceptions.DisambiguationError or wp.exceptions.PageError:
-        if len(wp.search(query)) > 0:
-            msg = '```'
-            for i in wp.search(query):
-                msg = msg + f'{i}\n'
-            msg = msg + '```'
-            embed = make_embed(title="Your Wiki was not found here are some similar results:",desc=msg)
-            await ctx.send(embed=embed)
-            return
-        else:
-            await ctx.send(embed=make_embed(title="Lmao",desc="We could not find the wiki you were looking for or any wikis similar."))
-            return
+      if len(wp.search(query)) > 0:
+        msg = '```'
+        for i in wp.search(query):
+          msg = msg + f'{i}\n'
+        msg = msg + '```'
+        embed = make_embed(title="Your Wiki was not found here are some similar results:",desc=msg)
+        await ctx.send(embed=embed)
+        return
+      else:
+        await ctx.send(embed=make_embed(title="Lmao",desc="We could not find the wiki you were looking for or any wikis similar."))
+        return
     embed = make_embed(title=article.title, desc=f"URL:{article.url}")
     sent = 10
-    async with ctx.channel.typing():
-      for i in range(31):
-          summary = wp.summary(query, sentences=sent)
-          if len(summary) >= 1024:
-              sent -= 1
-      sent = len(re.split(r'[.!?]+', summary)) - 1
-      embed.add_field(name=f"Summary (first {sent} sentence(s)):", value=summary)
-      await ctx.send(embed=embed)
+    for i in range(31):
+      summary = wp.summary(query, sentences=sent)
+      if len(summary) >= 1024:
+          sent -= 1
+    sent = len(re.split(r'[.!?]+', summary)) - 1
+    embed.add_field(name=f"Summary (first {sent} sentence(s)):", value=summary)
+    await ctx.send(embed=embed)
 
-#vault commands-----------------------------------------------
+#reddit commands----------------------------------------
 @client.command()
-async def vault(ctx):
-  author=ctx.author
-  if author.id in vaulters:
-    img=ctx.attachments.url
-    json.dumps({img:author})
-    vault=json.load(open("vault.json","r+"))
-    data={img:author}
-    vault.update(data)
-    json.dump(vault,open("vault.json","w+"),indent=4)
+async def meme(ctx):
+  if int(ctx.guild.id) not in reddit_nono or ctx.channel.is_nsfw():
+    global seen
+    subreddit=choice(["dankmemes","memes","PrequelMemes","terriblefacebookmemes","Discordmemes","Catmemes","WhitePeopleTwitter"])
+    posts=reddit.subreddit(subreddit).hot(limit=20)
+    if str(ctx.author) in seen:
+      if len(seen[str(ctx.author)])>25:
+        seen[str(ctx.author)]=[]
+    for x in posts:
+      try:
+        if not x.over_18 and not x.stickied and x not in seen[str(ctx.author)]:
+          submission = x
+          seen[str(ctx.author)].append(submission.id)
+          break
+      except KeyError:
+        if not x.over_18 and not x.stickied:
+          submission = x
+          submission = x
+          seen[str(ctx.author)]=[submission.id]
+          break
+    embed=discord.Embed(title=submission.title,colour=color,url=submission.shortlink,description="")
+    embed.set_image(url=submission.url)
+    embed.set_footer(text=f"👍 {submission.ups}\n💬 {submission.num_comments}\n Thanks to u/{submission.author.name} for providing this meme at r/{subreddit}")
+    await ctx.send(embed=embed)
   else:
-    await ctx.send("You are not a Nord Vaulter")
-#mod commands-----------------------------------------------
-'''
-@client.command(aliases=['changeprefix', 'prefixset', 'prefixchange'])
-@commands.has_permissions(administrator=True)
-async def setprefix(ctx, prefix):
-    await db.set_dict({str(ctx.guild.id):{"prefix":prefix}})
-    await ctx.send(f'Successfully changed the prefix to: **``{prefix}``**')
-'''
+    embed = make_embed(title=f"This Command may produce nsfw results which are not allowed here",desc="Server where it is allowed: https://discord.gg/nDjT5nR")
+    embed.set_image(url="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fpreview.redd.it%2Fssb6bwxqm4311.jpg%3Fwidth%3D1024%26auto%3Dwebp%26s%3D1ea83647f151bd5f94695f2907ad39f4d1d49c42&f=1&nofb=1")
+    await ctx.send(embed=embed)
+
+@client.command(aliases=["sr"])
+async def search_reddit(ctx,*,query):
+  if ctx.guild.id not in reddit_nono or ctx.channel.is_nsfw():
+    search=reddit.subreddits.search_by_name(query, include_nsfw=False)
+    msg = '```'
+    if len(search) == 0:
+        await ctx.send("Nope- nothing like that.")
+        return
+    for i in search:
+        msg = msg + f'r/{i}\n'
+    msg = msg + '```'
+    embed = make_embed(title=f"Query: {query}", desc=msg)
+    await ctx.send(embed=embed)
+  else:
+    embed = make_embed(title=f"This Command may produce nsfw results which are not allowed here",desc="Server where it is allowed: https://discord.gg/nDjT5nR")
+    embed.set_image(url="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fpreview.redd.it%2Fssb6bwxqm4311.jpg%3Fwidth%3D1024%26auto%3Dwebp%26s%3D1ea83647f151bd5f94695f2907ad39f4d1d49c42&f=1&nofb=1")
+    await ctx.send(embed=embed)
+
 #run-----------------------------------------------
 server.server()
 client.run(token)
